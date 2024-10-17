@@ -210,7 +210,7 @@ contract SimpleNFTMarketTest is Test {
   }
 
   // 测试通过直接给Market合约转账的方式购买NFT的场景
-  function tesdtBuyNFTByTransferERC20Token(
+  function testBuyNFTByTransferERC20Token(
     uint256 tokenId,
     uint256 price
     ) public {
@@ -226,7 +226,7 @@ contract SimpleNFTMarketTest is Test {
     vm.stopPrank();
   }
 
-  function tesdtBuyNFTByTransferERC20TokenUnsuccessfully(
+  function testBuyNFTByTransferERC20TokenUnsuccessfully(
     uint256 tokenId,
     uint256 price) public {
     (address seller, address buyer) = _prepareToTestBuyNFT(tokenId, price);
