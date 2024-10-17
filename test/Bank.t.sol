@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import {Test, console} from "forge-std/Test.sol";
-import {Bank} from "../src/Bank.sol";
+import {Bank} from "../src/bank.sol";
 
 contract BankTest is Test {
     Bank public bank;
@@ -13,8 +13,8 @@ contract BankTest is Test {
     }
 
     function testDepositETH(uint96 amount) public {
-      vm.expectEmit(true, true, false, false);
       vm.assume(amount > 0);
+      vm.expectEmit(true, false, false, true);
       emit Deposit(address(this), amount);
       bank.depositETH{value: amount}();
       assertEq(bank.balanceOf(address(this)), amount);

@@ -1,0 +1,4 @@
+{
+  "solidity.formatter": "forge",
+  "solidity.remappings": ["forge-std/=lib/forge-std/src/"]
+}
