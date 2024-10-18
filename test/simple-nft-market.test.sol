@@ -7,6 +7,7 @@ import { SimpleToken, ISimpleTokenReceiver } from "../src/nft-market/simple-toke
 import { SimpleNFT } from "../src/nft-market/simple-nft.sol";
 
 contract SimpleNFTTestHandler is Test {
+
   SimpleToken public token;
   SimpleNFT public nft;
   SimpleNFTMarket public market;
@@ -67,11 +68,24 @@ contract SimpleNFTMarketTest is Test {
     handler = new SimpleNFTTestHandler(token, nft, market);
   }
 
-  function _assumeArgs(uint256 tokenId, uint256 price) private view {
+  function _assumeArgs( uint256 tokenId, uint256 price) private view {
     // 0.01 <= price <= 10000
     vm.assume(price >= 1 && price <= (10000 * token.decimals()));
     vm.assume(tokenId < nft.MAX_SUPPLY());
   }
+
+  function _assumeArgs(address seller, uint256 tokenId, uint256 price) private view {
+    _assumeArgs(tokenId, price);
+    // OpenZepplin实现的ERC721要求NFT接收方如果是合约地址，需要实现接收回调，因此这里我们排除转给合约地址的场景
+    vm.assume(seller.code.length == 0 && seller != address(0));
+  }
+
+  function _assumeArgs(address seller, address buyer, uint256 tokenId, uint256 price) private view {
+    _assumeArgs(seller, tokenId, price);
+    vm.assume(buyer.code.length == 0 && buyer != address(0));
+    vm.assume(buyer != seller);
+  }
+
 
   function _mintAndListNFT(address seller, uint256 tokenId, uint256 price) private {
     vm.startPrank(seller);
@@ -82,25 +96,24 @@ contract SimpleNFTMarketTest is Test {
   }
 
   function _prepareToTestBuyNFT(
+    address seller,
+    address buyer,
     uint256 tokenId,
     uint256 price
-    ) private returns(address, address) {
-    _assumeArgs(tokenId, price);
-    address seller = makeAddr("sellerName");
-    address buyer = makeAddr("buyerName");
+    ) private {
+    _assumeArgs(seller, buyer, tokenId, price);
     _mintAndListNFT(seller, tokenId, price);
     deal(address(token), buyer, price);
     deal(address(token), seller, 0);
-    return (seller, buyer);
   }
 
   // 测试成功挂单的场景
   function testListNFTSuccessfully(
+    address seller,
     uint256 tokenId,
     uint256 price
     ) public {
-    address seller = makeAddr("sellerName");
-    _assumeArgs(tokenId, price);
+    _assumeArgs(seller, tokenId, price);
     vm.startPrank(seller);
     // seller mint NFT
     nft.mint(tokenId);
@@ -117,9 +130,8 @@ contract SimpleNFTMarketTest is Test {
   }
 
   // 测试挂单失败的场景
-  function testListNFTUnsuccessfully(uint256 tokenId, uint256 price) public {
-    address seller = makeAddr("sellerName");
-    _assumeArgs(tokenId, price);
+  function testListNFTUnsuccessfully(address seller, uint256 tokenId, uint256 price) public {
+    _assumeArgs(seller, tokenId, price);
     vm.startPrank(seller);
     nft.mint(tokenId);
     // case1: 未授权即挂单
@@ -149,10 +161,12 @@ contract SimpleNFTMarketTest is Test {
 
   // 测试购买成功的场景
   function testBuyNFT(
+    address seller,
+    address buyer,
     uint256 tokenId,
     uint256 price
     ) public {
-    (address seller, address buyer) = _prepareToTestBuyNFT(tokenId, price);
+    _prepareToTestBuyNFT(seller, buyer, tokenId, price);
     vm.startPrank(buyer);
     // 授权代币
     token.approve(address(market), price);
@@ -169,9 +183,11 @@ contract SimpleNFTMarketTest is Test {
 
   // 测试购买NFT失败的场景
   function testBuyNFTUnsuccessfully(
+    address seller,
+    address buyer,
     uint256 tokenId,
     uint256 price) public {
-    (address seller, address buyer) = _prepareToTestBuyNFT(tokenId, price);
+    _prepareToTestBuyNFT(seller, buyer, tokenId, price);
     // case1: seller未授权nft
     vm.prank(seller);
     nft.approve(address(0), tokenId);
@@ -211,10 +227,12 @@ contract SimpleNFTMarketTest is Test {
 
   // 测试通过直接给Market合约转账的方式购买NFT的场景
   function testBuyNFTByTransferERC20Token(
+    address seller,
+    address buyer,
     uint256 tokenId,
     uint256 price
     ) public {
-    (address seller, address buyer) = _prepareToTestBuyNFT(tokenId, price);
+    _prepareToTestBuyNFT(seller, buyer, tokenId, price);
     vm.startPrank(buyer);
     vm.expectEmit(true, true, true, true);
     emit Purchased(tokenId, buyer, price);
@@ -227,9 +245,11 @@ contract SimpleNFTMarketTest is Test {
   }
 
   function testBuyNFTByTransferERC20TokenUnsuccessfully(
+    address seller,
+    address buyer,
     uint256 tokenId,
     uint256 price) public {
-    (address seller, address buyer) = _prepareToTestBuyNFT(tokenId, price);
+    _prepareToTestBuyNFT(seller, buyer, tokenId, price);
     // case1: seller未授权nft
     vm.prank(seller);
     nft.approve(address(0), tokenId);
