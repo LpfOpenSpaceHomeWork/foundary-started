@@ -21,12 +21,12 @@ interface ISimpleTokenReceiver {
 
 contract SimpleToken is ERC20, Ownable {
   using Address for address;
-  constructor()
-    ERC20("SimpleToken", "ST")
+  constructor(string memory _name, string memory _symbol)
+    ERC20(_name, _symbol)
     Ownable(msg.sender)
   {}
 
-  function decimals() public pure override returns(uint8)  {
+  function decimals() public pure virtual override returns(uint8)  {
     return 2;
   }
 

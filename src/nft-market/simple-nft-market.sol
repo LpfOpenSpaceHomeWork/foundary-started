@@ -11,18 +11,18 @@ event Unlisted(uint256 indexed tokenId, address indexed owner);
 event Purchased(uint256 indexed tokenId, address indexed buyer, uint256 price);
 
 contract SimpleNFTMarket is ISimpleTokenReceiver {
-  SimpleToken public immutable simpleToken;
-  SimpleNFT public immutable simpleNFT;
+  SimpleToken public immutable token;
+  SimpleNFT public immutable nft;
   // tokenID => price
   mapping(uint256 => uint256) public listings;
 
-  constructor(SimpleToken _simpleTokenAddr, SimpleNFT _nftAddr) {
-    simpleToken = _simpleTokenAddr;
-    simpleNFT = _nftAddr;
+  constructor(SimpleToken _tokenAddr, SimpleNFT _nftAddr) {
+    token = _tokenAddr;
+    nft = _nftAddr;
   }
 
   modifier approvedNFT(uint256 tokenId) {
-    address nftOwner = simpleNFT.ownerOf(tokenId);
+    address nftOwner = nft.ownerOf(tokenId);
     require(
       _isNFTApproved(tokenId),
       "the NFT is not approved to the NFTMarket"
@@ -31,7 +31,7 @@ contract SimpleNFTMarket is ISimpleTokenReceiver {
   }
 
   modifier allowanedToken(address account, uint256 amount) {
-    uint256 _allownedToken = simpleToken.allowance(account, address(this));
+    uint256 _allownedToken = token.allowance(account, address(this));
     require(
       _allownedToken >= amount,
       ("the SimpleToken approved to the NFTMarket is not enough")
@@ -45,16 +45,16 @@ contract SimpleNFTMarket is ISimpleTokenReceiver {
   }
 
   modifier onlyNFTOwner(uint256 tokenId) {
-    require(simpleNFT.ownerOf(tokenId) == msg.sender, "only the owner of the NFT can list it");
+    require(nft.ownerOf(tokenId) == msg.sender, "only the owner of the NFT can list it");
     _;
   }
 
   function _isNFTApproved(uint256 tokenId) private view returns(bool) {
-    address nftOwner = simpleNFT.ownerOf(tokenId);
+    address nftOwner = nft.ownerOf(tokenId);
     return (
       nftOwner == address(this) ||
-      simpleNFT.isApprovedForAll(nftOwner, address(this)) ||
-      simpleNFT.getApproved(tokenId) == address(this)
+      nft.isApprovedForAll(nftOwner, address(this)) ||
+      nft.getApproved(tokenId) == address(this)
     );
   }
 
@@ -62,13 +62,17 @@ contract SimpleNFTMarket is ISimpleTokenReceiver {
     return listings[tokenId] > 0;
   }
 
-  function list(uint256 tokenId, uint256 price) external
-    approvedNFT(tokenId)
-    onlyNFTOwner(tokenId) {
+  function _list(uint256 tokenId, uint256 price) internal {
     require(price > 0, "price must be larger than 0");
     require(listings[tokenId] == 0, "the NFT has been listed before");
     listings[tokenId] = price;
-    emit Listed(tokenId, msg.sender, price);
+    emit Listed(tokenId, nft.ownerOf(tokenId), price);
+  }
+
+  function list(uint256 tokenId, uint256 price) external
+    approvedNFT(tokenId)
+    onlyNFTOwner(tokenId) {
+      _list(tokenId, price);
   }
 
   function unlist(uint256 tokenId) external
@@ -78,25 +82,28 @@ contract SimpleNFTMarket is ISimpleTokenReceiver {
     emit Unlisted(tokenId, msg.sender);
   }
 
-  function buyNFT(uint256 tokenId) external
+  function _buyNFT(address buyer, uint256 tokenId) internal
     approvedNFT(tokenId)
-    allowanedToken(msg.sender, listings[tokenId])
-    onlyNFTListed(tokenId)  {
-    uint256 price = listings[tokenId];
-    address seller = simpleNFT.ownerOf(tokenId);
-    address buyer = msg.sender;
-    require(seller != buyer, "you can not buy your own NFT");
-    simpleToken.transferFrom(buyer, seller, price);
-    simpleNFT.safeTransferFrom(seller, buyer, tokenId);
-    delete listings[tokenId];
-    emit Purchased(tokenId, msg.sender, price);
+    onlyNFTListed(tokenId) {
+      uint256 price = listings[tokenId];
+      address seller = nft.ownerOf(tokenId);
+      require(seller != buyer, "you can not buy your own NFT");
+      token.transferFrom(buyer, seller, price);
+      nft.safeTransferFrom(seller, buyer, tokenId);
+      delete listings[tokenId];
+      emit Purchased(tokenId, msg.sender, price);
+  }
+
+  function buyNFT(uint256 tokenId) external
+    allowanedToken(msg.sender, listings[tokenId]) {
+      _buyNFT(msg.sender, tokenId);
   }
 
   function tokensReceived(address from, uint256 amount, bytes calldata data) external {
-    require(msg.sender == address(simpleToken), "only the SimpleToken Contract can call the hook");
+    require(msg.sender == address(token), "only the SimpleToken Contract can call the hook");
     (uint256 tokenId) = abi.decode(data, (uint256));
     uint256 price = listings[tokenId];
-    address seller = simpleNFT.ownerOf(tokenId);
+    address seller = nft.ownerOf(tokenId);
     address buyer = from;
     require(_isNFTApproved(tokenId), "the NFT is not approved to the NFTMarket");
     require(_isNFTListed(tokenId), "the NFT has not been listed");
@@ -104,8 +111,8 @@ contract SimpleNFTMarket is ISimpleTokenReceiver {
     if (amount != price) {
         revert TransferedTokenAmoutNotMatchPrice(price, amount);
     }
-    simpleToken.transfer(seller, price);
-    simpleNFT.safeTransferFrom(seller, buyer, tokenId);
+    token.transfer(seller, price);
+    nft.safeTransferFrom(seller, buyer, tokenId);
     delete listings[tokenId];
     emit Purchased(tokenId, buyer, price);
   }

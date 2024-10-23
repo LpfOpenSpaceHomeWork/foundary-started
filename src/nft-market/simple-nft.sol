@@ -8,7 +8,7 @@ error IllegalTokenId(uint256);
 contract SimpleNFT is ERC721 {
   uint256 public constant MAX_SUPPLY = 1000;
 
-  constructor() ERC721("SimpleNFT", "SNFT") {
+  constructor(string memory _name, string memory _symbol) ERC721(_name, _symbol) {
   }
 
   function mint(uint256 tokenId) public {
