@@ -36,13 +36,14 @@ contract PermitTokenBank is TokenBank {
   }
 
   function permitDeposit(
+    address depositor,
     uint256 amount,
     uint256 deadline,
     uint8 v,
     bytes32 r,
     bytes32 s
   ) public {
-    token.permit(msg.sender, address(this), amount, deadline, v, r, s);
-    _deposit(msg.sender, amount);
+    token.permit(depositor, address(this), amount, deadline, v, r, s);
+    _deposit(depositor, amount);
   }
 }

@@ -61,7 +61,7 @@ contract SimpleNFTMarketTest is Test {
   SimpleNFTMarket public market;
   SimpleNFTTestHandler public handler;
 
-  function setUp() public virtual {
+  function setUp() public {
     token = new SimpleToken("SimpleToken", "ST");
     nft = new SimpleNFT("SimpleNFT", "SNFT");
     market = new SimpleNFTMarket(token, nft);

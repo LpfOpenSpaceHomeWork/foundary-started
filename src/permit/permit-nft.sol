@@ -7,8 +7,8 @@ import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { Nonces } from "@openzeppelin/contracts/utils/Nonces.sol";
 import { SimpleNFT } from "../nft-market/simple-nft.sol";
 
-error ExpiredSignature(uint256 deadline);
-error InvalidSigner(address signer, address owner);
+error NFTPermitExpiredSignature(uint256 deadline);
+error NFTPermitInvalidSigner(address signer, address owner);
 
 contract PermitNFT is SimpleNFT, EIP712, Nonces {
   constructor(string memory _name, string memory _symbol)
@@ -39,15 +39,15 @@ contract PermitNFT is SimpleNFT, EIP712, Nonces {
     bytes32 s
   ) public {
     if (block.timestamp > deadline) {
-      revert ExpiredSignature(deadline);
+      revert NFTPermitExpiredSignature(deadline);
     }
     address owner = ownerOf(tokenId);
     bytes32 hash = buildPermitArgsHashTypedDataV4(to, tokenId, deadline);
-    _useNonce(owner);
     address signer = ECDSA.recover(hash, v, r, s);
     if (signer != owner) {
-        revert InvalidSigner(signer, owner);
+        revert NFTPermitInvalidSigner(signer, owner);
     }
+    _useNonce(owner);
     _approve(to, tokenId, owner);
   }
 }

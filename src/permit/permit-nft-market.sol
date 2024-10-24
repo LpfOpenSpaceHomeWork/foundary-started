@@ -26,9 +26,17 @@ contract PermitNFTMarket is SimpleNFTMarket, EIP712 {
       permitNFT = _permitNFT;
   }
 
-  // seller => buyer => tokenId => nonce
+  // nounceKey = bytes32(keccak256(abi.encodePacked(seller,buyer,tokenId))
   // 由于可能会有多个卖家给多个买家分发多个签名，所以这里我们不使用OpenZepplin提供的Nonces合约，而是把nonce的粒度限定为一次交易的nonce
-  mapping(address => mapping(address => mapping(uint256 => uint256))) private _nonces;
+  mapping(bytes32 => uint256) private _nonces;
+
+  function _getNonces(address seller, address buyer, uint256 tokenId) view internal returns(uint256) {
+    return _nonces[bytes32(keccak256(abi.encodePacked(seller, buyer, tokenId)))];
+  }
+
+  function _updateNonces(address seller, address buyer, uint256 tokenId) internal {
+    _nonces[bytes32(keccak256(abi.encodePacked(seller, buyer, tokenId)))]++;
+  }
 
   bytes32 private constant PERMIT_TYPEHASH =
         keccak256("Permit(address buyer,uint256 tokenId,uint256 nonce,uint256 deadline)");
@@ -60,7 +68,7 @@ contract PermitNFTMarket is SimpleNFTMarket, EIP712 {
         PERMIT_TYPEHASH,
         buyer,
         tokenId,
-        _nonces[seller][buyer][tokenId],
+        _getNonces(seller, buyer, tokenId),
         deadline)
       );
     bytes32 hash = _hashTypedDataV4(structHash);
@@ -68,6 +76,7 @@ contract PermitNFTMarket is SimpleNFTMarket, EIP712 {
   }
 
   function permitBuyNFT(
+    address buyer,
     uint256 tokenId,
     uint256 deadline,
     Signature calldata sellerPermitSig,
@@ -77,13 +86,12 @@ contract PermitNFTMarket is SimpleNFTMarket, EIP712 {
       revert ExpiredSignature(deadline);
     }
     address seller = permitNFT.ownerOf(tokenId);
-    address buyer = msg.sender;
     bytes32 hash = buildPermitArgsHashTypedDataV4(buyer, tokenId, deadline);
     address signer = ECDSA.recover(hash, sellerPermitSig.v, sellerPermitSig.r, sellerPermitSig.s);
     if (signer != seller) {
       revert InvalidSigner(signer, seller);
     }
-    _nonces[seller][buyer][tokenId]++;
+    _updateNonces(seller, buyer, tokenId);
     uint256 price = listings[tokenId];
     permitToken.permit(
       buyer,
