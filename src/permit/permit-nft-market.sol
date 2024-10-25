@@ -85,6 +85,7 @@ contract PermitNFTMarket is SimpleNFTMarket, EIP712 {
     if (block.timestamp > deadline) {
       revert ExpiredSignature(deadline);
     }
+    // 这里的seller就是项目方
     address seller = permitNFT.ownerOf(tokenId);
     bytes32 hash = buildPermitArgsHashTypedDataV4(buyer, tokenId, deadline);
     address signer = ECDSA.recover(hash, sellerPermitSig.v, sellerPermitSig.r, sellerPermitSig.s);

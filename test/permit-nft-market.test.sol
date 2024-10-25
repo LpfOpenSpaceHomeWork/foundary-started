@@ -5,7 +5,7 @@ import { Test } from "forge-std/Test.sol";
 import { Vm } from "forge-std/Vm.sol";
 import { ERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import { PermitNFTMarket, Signature } from "../src/permit/permit-nft-market.sol";
+import { PermitNFTMarket, Signature, InvalidSigner } from "../src/permit/permit-nft-market.sol";
 import { PermitToken } from "../src/permit/permit-token.sol";
 import { PermitNFT, NFTPermitInvalidSigner, NFTPermitExpiredSignature } from "../src/permit/permit-nft.sol";
 
@@ -106,10 +106,6 @@ contract PermitNFTMarketTest is Test {
     deal(address(token), buyerAddr, price);
   }
 
-  /**
-  * ERC20Permit token的相关异常测试参考permit-token-bank.test.sol，这里在permitBuy中不测了，只测一下白名单签名异常的情况
-  */
-
   function testPermitBuy(string memory buyerName, string memory sellerName, uint256 tokenId, uint256 price) public {
     _assumeArgs(tokenId, price);
     Vm.Wallet memory sellerWallet = vm.createWallet(sellerName);
@@ -131,4 +127,44 @@ contract PermitNFTMarketTest is Test {
     market.permitBuyNFT(buyerAddr, tokenId, deadline, sellerPermitSig, buyerPermitSig);
     assertEq(nft.ownerOf(tokenId), buyerAddr);
   }
+
+  function testRevertPermitListNFTInvalidBuyer(
+    string memory sellerName,
+    string memory buyerName,
+    uint256 tokenId,
+    uint256 price
+  ) public {
+    _assumeArgs(tokenId, price);
+    Vm.Wallet memory sellerWallet = vm.createWallet(sellerName);
+    Vm.Wallet memory buyerWallet = vm.createWallet(buyerName);
+    Vm.Wallet memory invalidBuyerWallet = vm.createWallet("invalidBuyer");
+    address sellerAddr = sellerWallet.addr;
+    address buyerAddr = buyerWallet.addr;
+    address invalidBuyerAddr = invalidBuyerWallet.addr;
+    vm.assume(sellerAddr != buyerAddr && buyerAddr != invalidBuyerAddr);
+    _mintAndlistNFT(sellerAddr, buyerAddr, tokenId, price);
+    assertEq(nft.ownerOf(tokenId), sellerAddr);
+    uint256 deadline = block.timestamp + 1 days;
+    // seller给buyer签名授权白名单
+    bytes32 sellerDigest = market.buildPermitArgsHashTypedDataV4(buyerAddr, tokenId, deadline);
+    (uint8 vSellerSig, bytes32 rSellerSig, bytes32 sSellerSig) = vm.sign(sellerWallet, sellerDigest);
+    Signature memory sellerPermitSig = Signature(vSellerSig, rSellerSig, sSellerSig);
+    // invalidBuyer的买家签名
+    bytes32 invalidBuyerDigest = token.buildPermitArgsHashTypedDataV4(invalidBuyerAddr, address(market), price, deadline);
+    (uint8 vBuyerSig, bytes32 rBuyerSig, bytes32 sBuyerSig) = vm.sign(invalidBuyerWallet, invalidBuyerDigest);
+    Signature memory invalidBuyerPermitSig = Signature(vBuyerSig, rBuyerSig, sBuyerSig);
+    // 合约在验证签名时候，根据invalidBuyer恢复出来的invalidSellerSigner
+    bytes32 verifyingDigest = market.buildPermitArgsHashTypedDataV4(invalidBuyerAddr, tokenId, deadline);
+    address invalidSellerSigner = ECDSA.recover(verifyingDigest, vSellerSig, rSellerSig, sSellerSig);
+
+    // invalidBuyer用seller给buyer的白名单签名购买，会revert
+    vm.expectRevert(abi.encodeWithSelector(InvalidSigner.selector, invalidSellerSigner, sellerAddr));
+    market.permitBuyNFT(invalidBuyerAddr, tokenId, deadline, sellerPermitSig, invalidBuyerPermitSig);
+  }
+
+  /**
+  * TODO: ERC20Permit token的相关异常测试参考permit-token-bank.test.sol，因为开发时间的原因，买家签名的验证逻辑不测了
+  * TODO: 白名单超时的验证逻辑与token和nft的验证逻辑也大同小异，这里暂时也不测了
+  * TODO: 签名重用的测试还没有写
+  */
 }
