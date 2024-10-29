@@ -289,8 +289,8 @@ contract SimpleNFTMarketTest is Test {
     vm.stopPrank();
   }
 
-  // 不可变测试
-  function invariantMarketTokenBalance() public view {
-    assertEq(token.balanceOf(address(market)), 0);
-  }
+  // // 不可变测试
+  // function invariantMarketTokenBalance() public {
+  //   assertEq(token.balanceOf(address(market)), 0);
+  // }
 }

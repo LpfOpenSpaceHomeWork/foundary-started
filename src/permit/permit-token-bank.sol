@@ -56,7 +56,7 @@ contract PermitTokenBank is TokenBank {
   }
 
   function permit2Deposit(PermitDetail calldata permitDetail, bytes calldata signature) public {
-    ISignatureTransfer permit2 = IPermit2(0x77eB49386ff9ef934FE6f051b80B3e86f1EF6322);
+    ISignatureTransfer permit2 = IPermit2(0x000000000022D473030F116dDEE9F6B43aC78BA3);
     ISignatureTransfer.TokenPermissions memory permitted = ISignatureTransfer.TokenPermissions({
       token: address(token),
       amount: permitDetail.amount
