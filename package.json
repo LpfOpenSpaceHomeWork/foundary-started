@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "deployPermit2TokenBank": "forge script DeployPermit2 --account local0xf39 --rpc-url http://localhost:8545 --broadcast && forge script DeployPermitTokenBank --account local0xf39 --rpc-url http://localhost:8545 --broadcast"
+    "deployPermit2TokenBank": "forge script DeployPermitTokenBank --account appWallet --rpc-url http://localhost:8545 --broadcast",
+    "deployPermit2TokenBank:sepolia": "source .env && forge script DeployPermitTokenBank --account appWallet --rpc-url https://ethereum-sepolia-rpc.publicnode.com --broadcast --verify"
   },
   "keywords": [],
   "author": "",
