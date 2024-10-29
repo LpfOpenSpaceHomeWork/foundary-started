@@ -1,0 +1,12 @@
+{
+  "name": "foundary-started",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "deployPermit2TokenBank": "forge script DeployPermit2 --account local0xf39 --rpc-url http://localhost:8545 --broadcast && forge script DeployPermitTokenBank --account local0xf39 --rpc-url http://localhost:8545 --broadcast"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

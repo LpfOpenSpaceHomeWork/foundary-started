@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { console } from "forge-std/console.sol";
 
 library Address {
   function isContract(address addr) internal view returns (bool) {
@@ -30,7 +31,8 @@ contract SimpleToken is ERC20, Ownable {
     return 2;
   }
 
-  function mint(address to, uint256 amount) public onlyOwner {
+  function mint(address to, uint256 amount) public {
+    console.log(msg.sender);
     _mint(to, amount);
   }
 

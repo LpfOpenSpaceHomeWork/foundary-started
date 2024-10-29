@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import { PermitToken } from "./permit-token.sol";
+import { ISignatureTransfer, IPermit2 } from "../../lib/permit2/src/interfaces/IPermit2.sol";
 
 contract TokenBank {
 
@@ -45,5 +46,30 @@ contract PermitTokenBank is TokenBank {
   ) public {
     token.permit(depositor, address(this), amount, deadline, v, r, s);
     _deposit(depositor, amount);
+  }
+
+  struct PermitDetail {
+    address owner;
+    uint256 amount;
+    uint256 deadline;
+    uint256 nonce;
+  }
+
+  function permit2Deposit(PermitDetail calldata permitDetail, bytes calldata signature) public {
+    ISignatureTransfer permit2 = IPermit2(0x77eB49386ff9ef934FE6f051b80B3e86f1EF6322);
+    ISignatureTransfer.TokenPermissions memory permitted = ISignatureTransfer.TokenPermissions({
+      token: address(token),
+      amount: permitDetail.amount
+    });
+    ISignatureTransfer.PermitTransferFrom memory permit = ISignatureTransfer.PermitTransferFrom({
+      permitted: permitted,
+      nonce: permitDetail.nonce,
+      deadline: permitDetail.deadline
+    });
+    ISignatureTransfer.SignatureTransferDetails memory transferDetails = ISignatureTransfer.SignatureTransferDetails({
+      to: address(this),
+      requestedAmount: permitDetail.amount
+    });
+    permit2.permitTransferFrom(permit, transferDetails, permitDetail.owner, signature);
   }
 }
