@@ -4,8 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "preDeploy": "source .env && cast send 0x62e3E7b8876F2d3063FFC230a5b6D0626b7Ff1f4 --value 100ether --private-key $RAW_PRIVATE_KEY",
     "deployPermit2TokenBank": "forge script DeployPermitTokenBank --account appWallet --rpc-url http://localhost:8545 --broadcast",
-    "deployPermit2TokenBank:sepolia": "source .env && forge script DeployPermitTokenBank --account appWallet --rpc-url https://ethereum-sepolia-rpc.publicnode.com --broadcast --verify"
+    "deployPermit2TokenBank:sepolia": "source .env && forge script DeployPermitTokenBank --account appWallet --rpc-url https://ethereum-sepolia-rpc.publicnode.com --broadcast --verify",
+    "deployNFTMarketV2": "forge script script/nft-market-v2.script.sol:DeployNFTMarketV2 --account appWallet --rpc-url http://localhost:8545 --broadcast",
+    "deployNFTMarketV2:sepolia": "source .env && forge script script/nft-market-v2.script.sol:DeployNFTMarketV2 --account appWallet --rpc-url https://ethereum-sepolia-rpc.publicnode.com --broadcast --verify"
   },
   "keywords": [],
   "author": "",
