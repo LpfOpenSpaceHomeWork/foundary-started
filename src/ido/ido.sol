@@ -8,6 +8,8 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract IDO {
   address payable public immutable preSaleImplementation;
 
+  event StartPreSale(address indexed preSaleCA);
+
   constructor() {
     preSaleImplementation = payable(address(new TokenPreSale()));
   }
@@ -19,6 +21,7 @@ contract IDO {
     address payable preSaleCA = payable(Clones.clone(preSaleImplementation));
     token.transferFrom(msg.sender, preSaleCA, tokensToApprove);
     TokenPreSale(preSaleCA).init(_preSaleInfo);
+    emit StartPreSale(preSaleCA);
     return preSaleCA;
   }
 }
