@@ -26,7 +26,6 @@ contract TokenPreSale {
     uint256 price; // 预售价格(wei)
     uint256 supply; // 预售数量
     uint256 maxAmountPerAccount; // 每个账号允许购买的token数量上限
-    uint256 startTime; // 预售开始时间
     uint256 duration; // 持续时间
   }
 
