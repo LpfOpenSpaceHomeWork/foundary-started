@@ -2,9 +2,9 @@
 pragma solidity ^0.8.0;
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
-contract BaseERC20Token is ERC20, Ownable {
-  bool public inited = false;
+contract BaseERC20Token is ERC20, Ownable, Initializable {
   string private _token_symbol = "";
   uint256 private _maxSupply = 0;
   uint256 private _perMint = 0;
@@ -24,18 +24,14 @@ contract BaseERC20Token is ERC20, Ownable {
     return _token_symbol;
   }
 
-  function init(string calldata token_symbol, uint256 maxSupply, uint256 perMint) public {
-    if (inited) {
-      revert NotAllowedToInitMultipleTimes();
-    }
+  function init(string calldata token_symbol, uint256 maxSupply, uint256 perMint) public initializer {
     if (perMint > maxSupply) {
       revert InvalidArgs(maxSupply, perMint);
     }
     _token_symbol = token_symbol;
     _maxSupply = maxSupply;
     _perMint = perMint;
-    transferOwnership(msg.sender);
-    inited = true;
+    _transferOwnership(msg.sender);
     emit Inited(token_symbol, maxSupply, perMint);
   }
 
