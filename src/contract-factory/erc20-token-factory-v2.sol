@@ -3,10 +3,11 @@ pragma solidity ^0.8.0;
 import { BaseERC20Token } from "./base-erc-20-token.sol";
 import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-contract ERC20TokenFactoryV2 is Initializable, Ownable, UUPSUpgradeable {
+contract ERC20TokenFactoryV2 is Initializable, OwnableUpgradeable, UUPSUpgradeable {
   error NotReachedTokenPrice(uint256 price, uint256 paid);
 
   event InscriptionDeployed(string symbol, address tokenAddr);
@@ -14,11 +15,8 @@ contract ERC20TokenFactoryV2 is Initializable, Ownable, UUPSUpgradeable {
   mapping(address => uint256) private tokenMintPriceMap;
   address private _baseERC20TokenAddr;
 
-  constructor() Ownable(msg.sender) {
-  }
-
   function initialize() initializer public {
-    _transferOwnership(msg.sender);
+    __Ownable_init(msg.sender);
     _baseERC20TokenAddr = address(new BaseERC20Token());
   }
 
